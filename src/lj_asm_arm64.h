@@ -1512,6 +1512,17 @@ static void asm_mul(ASMState *as, IRIns *ir)
 #define asm_fpdiv(as, ir)	asm_fparith(as, ir, A64I_FDIVd)
 #define asm_abs(as, ir)		asm_fpunary(as, ir, A64I_FABS)
 
+static void asm_idiv(ASMState *as, IRIns *ir)
+{
+#if LJ_HASFFI
+  if (!irt_isint(ir->t))
+    asm_callid(as, ir, irt_isi64(ir->t) ? IRCALL_lj_carith_divi64 :
+					  IRCALL_lj_carith_divu64);
+  else
+#endif
+    asm_callid(as, ir, IRCALL_lj_vm_idivi);
+}
+
 static void asm_neg(ASMState *as, IRIns *ir)
 {
   if (irt_isnum(ir->t)) {

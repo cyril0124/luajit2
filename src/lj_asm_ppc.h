@@ -1434,6 +1434,7 @@ static void asm_mul(ASMState *as, IRIns *ir)
 }
 
 #define asm_fpdiv(as, ir)	asm_fparith(as, ir, PPCI_FDIV)
+#define asm_idiv(as, ir)		asm_callid(as, ir, IRCALL_lj_vm_idivi)
 
 static void asm_neg(ASMState *as, IRIns *ir)
 {

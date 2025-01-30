@@ -2227,6 +2227,17 @@ static void asm_mul(ASMState *as, IRIns *ir)
 
 #define asm_fpdiv(as, ir)	asm_fparith(as, ir, XO_DIVSD)
 
+static void asm_idiv(ASMState *as, IRIns *ir)
+{
+#if LJ_64 && LJ_HASFFI
+  if (!irt_isint(ir->t))
+    asm_callid(as, ir, irt_isi64(ir->t) ? IRCALL_lj_carith_divi64 :
+					  IRCALL_lj_carith_divu64);
+  else
+#endif
+    asm_callid(as, ir, IRCALL_lj_vm_idivi);
+}
+
 static void asm_neg_not(ASMState *as, IRIns *ir, x86Group3 xg)
 {
   Reg dest = ra_dest(as, ir, RSET_GPR);
