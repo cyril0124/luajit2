@@ -551,10 +551,8 @@ TRef lj_opt_narrow_arith(jit_State *J, TRef rb, TRef rc,
 TRef lj_opt_narrow_bitwise(jit_State *J, TRef rb, TRef rc,
 			 TValue *vb, TValue *vc, IROp op)
 {
-  rb = conv_str_tonum(J, rb, vb);
-  rc = conv_str_tonum(J, rc, vc);
-  if (!tref_isnum(rb)) rb = emitir(IRTN(IR_CONV), rb, IRCONV_NUM_INT);
-  if (!tref_isnum(rc)) rc = emitir(IRTN(IR_CONV), rc, IRCONV_NUM_INT);
+  rb = lj_opt_narrow_tobit(J, rb);
+  rc = lj_opt_narrow_tobit(J, rc);
   return emitir(IRTI(op), rb, rc);
 }
 
