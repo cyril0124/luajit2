@@ -266,16 +266,24 @@ end
 -- local dump = require "jit.dump"
 -- dump.on(nil, "./dump.jit.out")
 
-local s = os.clock()
-for i = 1, 10000 * 1000 * 100 do
-  local a = 1 << i % 3
-  local b = 0xFF >> i % 3
-  local c = 1ULL >> i % 3
-  local d = c << 1ULL
-  local e = a << b
+local test = function (times)
+    for i = 1, times do
+        local a = 1 << i % 3
+        local b = 0xFF >> i % 3
+        local c = 1ULL >> i % 3
+        local d = c << 1ULL
+        local e = a << b
+    end
 end
+
+local s = os.clock()
+test(10000 * 1000 * 100)
 local e = os.clock()
 print(e - s)
+
+jit.off()
+test(10)
+jit.on()
 
 
 -- local dump = require "jit.dump"
@@ -343,6 +351,25 @@ do
     jit.on()
     jit.opt.start("hotloop=1")
     test()
+end
+
+do
+    jit.on()
+    jit.opt.start("hotloop=1")
+
+    local mask32 = 0x8
+    local mask64 = 0x8ULL
+    local v32 = 0x01
+    local v64 = 0x01ULL
+    for i = 1, 5 do
+        if (mask32 & v32) ~= 0 then
+            assert(false)
+        end
+
+        if (mask64 & v32) ~= 0 then
+            assert(false)
+        end
+    end
 end
 
 print("Finish")
