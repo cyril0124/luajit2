@@ -1395,6 +1395,8 @@ static TRef crec_arith_int64(jit_State *J, TRef *sp, CType **s, MMS mm)
       lj_ir_set(J, IRTG(op, dt), sp[0], sp[1]);
       J->postproc = LJ_POST_FIXGUARD;
       return TREF_TRUE;
+    } else if(mm >= MM_band) {
+      tr = emitir(IRT(mm+(int)IR_BAND-(int)MM_band, dt), sp[0], sp[1]);
     } else {
       tr = emitir(IRT(mm+(int)IR_ADD-(int)MM_add, dt), sp[0], sp[1]);
     }
@@ -1457,7 +1459,11 @@ static TRef crec_arith_ptr(jit_State *J, TRef *sp, CType **s, MMS mm)
     }
 #endif
     tr = emitir(IRT(IR_MUL, IRT_INTP), tr, lj_ir_kintp(J, sz));
-    tr = emitir(IRT(mm+(int)IR_ADD-(int)MM_add, IRT_PTR), sp[0], tr);
+    if(mm >= MM_band) {
+      tr = emitir(IRT(mm+(int)IR_BAND-(int)MM_band, IRT_PTR), sp[0], tr);
+    } else {
+      tr = emitir(IRT(mm+(int)IR_ADD-(int)MM_add, IRT_PTR), sp[0], tr);
+    }
     id = lj_ctype_intern(cts, CTINFO(CT_PTR, CTALIGN_PTR|ctype_cid(ctp->info)),
 			 CTSIZE_PTR);
     return emitir(IRTG(IR_CNEWI, IRT_CDATA), lj_ir_kint(J, id), tr);
