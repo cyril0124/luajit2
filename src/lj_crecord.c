@@ -1395,6 +1395,10 @@ static TRef crec_arith_int64(jit_State *J, TRef *sp, CType **s, MMS mm)
       lj_ir_set(J, IRTG(op, dt), sp[0], sp[1]);
       J->postproc = LJ_POST_FIXGUARD;
       return TREF_TRUE;
+    } else if (mm == MM_unm) {
+      tr = emitir(IRT((int)IR_NEG, dt), sp[0], sp[1]);
+    } else if (mm == MM_bnot) {
+      tr = emitir(IRT(IR_BNOT, dt), sp[0], 0);
     } else if(mm >= MM_band) {
       tr = emitir(IRT(mm+(int)IR_BAND-(int)MM_band, dt), sp[0], sp[1]);
     } else {

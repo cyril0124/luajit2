@@ -372,4 +372,19 @@ do
     end
 end
 
+do
+    jit.opt.start("hotloop=1")
+    -- local dump = require "jit.dump"
+    -- dump.on(nil, "./dump.jit.out")
+
+    local vv = 1LL
+    local v = 0x0000000100000000ULL
+    for i = 1, 5 do
+        assert(-vv == -1)
+        assert(-10 == -10)
+        assert(~v == 0xfffffffeffffffffULL)
+        assert(~(0x0000000100000000ULL) == 0xfffffffeffffffffULL)
+    end
+end
+
 print("Finish")
