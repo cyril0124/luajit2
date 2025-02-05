@@ -1,4 +1,12 @@
 do
+    assert(2 ^ 32 - 1 == 4294967295)
+    assert(2ULL ^ 32 - 1 == 4294967295)
+    assert(2ULL ^ 32ULL - 1 == 4294967295)
+    assert(2 ^ 32ULL - 1 == 4294967295)
+    assert(math.max(0 ,1) == 1)
+end
+
+do
     local aa = 3
     local bb = 2
     local a = 1 & 1
@@ -384,6 +392,21 @@ do
         assert(-10 == -10)
         assert(~v == 0xfffffffeffffffffULL)
         assert(~(0x0000000100000000ULL) == 0xfffffffeffffffffULL)
+    end
+end
+
+do
+    jit.opt.start("hotloop=1")
+    -- local dump = require "jit.dump"
+    -- dump.on(nil, "./dump.jit.out")
+
+    local x = 0ll
+    local result = {16, 32, 48, 64, 80}
+    for i=1,5 do 
+        local xp = x
+        local v = (-2LL) ^ 4
+        x = xp + v
+        assert(result[i] == x)
     end
 end
 
