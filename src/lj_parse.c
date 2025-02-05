@@ -9,7 +9,6 @@
 #define lj_parse_c
 #define LUA_CORE
 
-#include <math.h>
 
 #include "lj_obj.h"
 #include "lj_gc.h"
@@ -778,7 +777,7 @@ static void bcemit_branch_f(FuncState *fs, ExpDesc *e)
 /* -- Bytecode emitter for operators -------------------------------------- */
 
 
-double __foldarith(double x, double y, int op)
+static double __foldarith(double x, double y, int op)
 {
   // printf("__foldarith  x:%d/0x%x, y:%d/0x%x, op:%d\n", (uint32_t)x, (uint32_t)x, (uint32_t)y, (uint32_t)y, op);
   switch (op) {
@@ -789,7 +788,7 @@ double __foldarith(double x, double y, int op)
     case OPR_IDIV: return lj_vm_floor(x/y); break;
     case OPR_MOD: return x-(lj_vm_floor(x / y) * y); break;
     case OPR_POW: return pow(x, y); break;
-    default: return x;
+    default: ljp_assert(0, "bad op: %d", op); return x;
   }
 }
 
