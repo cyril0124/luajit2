@@ -209,6 +209,22 @@ static cTValue *str2num(cTValue *o, TValue *n)
     return NULL;
 }
 
+static double __foldarith(double x, double y, int op)
+{
+  // printf("__foldarith  x:%d/0x%x, y:%d/0x%x, op:%d\n", (uint32_t)x, (uint32_t)x, (uint32_t)y, (uint32_t)y, op);
+  switch (op) {
+    case MM_add: return x+y; break;
+    case MM_sub: return x-y; break;
+    case MM_mul: return x*y; break;
+    case MM_div: return x/y; break;
+    case MM_idiv: return lj_vm_floor(x/y); break;
+    case MM_mod: return x-(lj_vm_floor(x / y) * y); break;
+    case MM_pow: return pow(x, y); break;
+    case MM_unm: return -x; break;
+    default: ljp_assert(0, "bad op: %d", op); return x;
+  }
+}
+
 /* Helper for arithmetic instructions. Coercion, metamethod. */
 TValue *lj_meta_arith(lua_State *L, TValue *ra, cTValue *rb, cTValue *rc,
 		      BCReg op)
@@ -218,7 +234,7 @@ TValue *lj_meta_arith(lua_State *L, TValue *ra, cTValue *rb, cTValue *rc,
   cTValue *b, *c;
   if ((b = str2num(rb, &tempb)) != NULL &&
       (c = str2num(rc, &tempc)) != NULL) {  /* Try coercion first. */
-    setnumV(ra, lj_vm_foldarith(numV(b), numV(c), (int)mm-MM_add));
+    setnumV(ra, __foldarith(numV(b), numV(c), (int)mm));
     return NULL;
   } else {
     cTValue *mo = lj_meta_lookup(L, rb, mm);

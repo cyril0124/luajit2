@@ -4,6 +4,9 @@ do
     assert(2ULL ^ 32ULL - 1 == 4294967295)
     assert(2 ^ 32ULL - 1 == 4294967295)
     assert(math.max(0 ,1) == 1)
+
+    assert("39" ^ 3 == 59319)
+    assert(-"39" == -39)
 end
 
 do
