@@ -9,6 +9,8 @@
 #define lj_parse_c
 #define LUA_CORE
 
+#include <math.h>
+
 #include "lj_obj.h"
 #include "lj_gc.h"
 #include "lj_err.h"
@@ -775,13 +777,29 @@ static void bcemit_branch_f(FuncState *fs, ExpDesc *e)
 
 /* -- Bytecode emitter for operators -------------------------------------- */
 
+
+double __foldarith(double x, double y, int op)
+{
+  // printf("__foldarith  x:%d/0x%x, y:%d/0x%x, op:%d\n", (uint32_t)x, (uint32_t)x, (uint32_t)y, (uint32_t)y, op);
+  switch (op) {
+    case OPR_ADD: return x+y; break;
+    case OPR_SUB: return x-y; break;
+    case OPR_MUL: return x*y; break;
+    case OPR_DIV: return x/y; break;
+    case OPR_IDIV: return lj_vm_floor(x/y); break;
+    case OPR_MOD: return x-(lj_vm_floor(x / y) * y); break;
+    case OPR_POW: return pow(x, y); break;
+    default: return x;
+  }
+}
+
 /* Try constant-folding of arithmetic operators. */
 static int foldarith(BinOpr opr, ExpDesc *e1, ExpDesc *e2)
 {
   TValue o;
   lua_Number n;
   if (!expr_isnumk_nojump(e1) || !expr_isnumk_nojump(e2)) return 0;
-  n = lj_vm_foldarith(expr_numberV(e1), expr_numberV(e2), (int)opr-OPR_ADD);
+  n = __foldarith(expr_numberV(e1), expr_numberV(e2), (int)opr);
   setnumV(&o, n);
   if (tvisnan(&o) || tvismzero(&o)) return 0;  /* Avoid NaN and -0 as consts. */
   if (LJ_DUALNUM) {
