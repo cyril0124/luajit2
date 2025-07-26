@@ -209,6 +209,22 @@ static cTValue *str2num(cTValue *o, TValue *n)
     return NULL;
 }
 
+static double __foldarith(double x, double y, int op)
+{
+  // printf("__foldarith  x:%d/0x%x, y:%d/0x%x, op:%d\n", (uint32_t)x, (uint32_t)x, (uint32_t)y, (uint32_t)y, op);
+  switch (op) {
+    case MM_add: return x+y; break;
+    case MM_sub: return x-y; break;
+    case MM_mul: return x*y; break;
+    case MM_div: return x/y; break;
+    case MM_idiv: return lj_vm_floor(x/y); break;
+    case MM_mod: return x-(lj_vm_floor(x / y) * y); break;
+    case MM_pow: return pow(x, y); break;
+    case MM_unm: return -x; break;
+    default: ljp_assert(0, "bad op: %d", op); return x;
+  }
+}
+
 /* Helper for arithmetic instructions. Coercion, metamethod. */
 TValue *lj_meta_arith(lua_State *L, TValue *ra, cTValue *rb, cTValue *rc,
 		      BCReg op)
@@ -218,7 +234,7 @@ TValue *lj_meta_arith(lua_State *L, TValue *ra, cTValue *rb, cTValue *rc,
   cTValue *b, *c;
   if ((b = str2num(rb, &tempb)) != NULL &&
       (c = str2num(rc, &tempc)) != NULL) {  /* Try coercion first. */
-    setnumV(ra, lj_vm_foldarith(numV(b), numV(c), (int)mm-MM_add));
+    setnumV(ra, __foldarith(numV(b), numV(c), (int)mm));
     return NULL;
   } else {
     cTValue *mo = lj_meta_lookup(L, rb, mm);
@@ -228,6 +244,57 @@ TValue *lj_meta_arith(lua_State *L, TValue *ra, cTValue *rb, cTValue *rc,
 	if (str2num(rb, &tempb) == NULL) rc = rb;
 	lj_err_optype(L, rc, LJ_ERR_OPARITH);
 	return NULL;  /* unreachable */
+      }
+    }
+    return mmcall(L, lj_cont_ra, mo, rb, rc);
+  }
+}
+
+static cTValue *str2int(lua_State *L, cTValue *o, TValue *n)
+{
+  // printf("str2int ...\n");
+  if (tvisint(o))
+    return o;
+  else if (tvisnum(o)) {
+    int32_t k = (int32_t)numV(o);
+    if ((lua_Number)k != numV(o))
+      lj_err_msg(L, LJ_ERR_NOINT);
+    setintV(n, k);
+    return n;
+  } else if (tvisstr(o) && lj_strscan_num(strV(o), n))
+    if (tvisint(n))
+      return n;
+    else {
+      int32_t k = (int32_t)numV(n);
+      if ((lua_Number)k != numV(n))
+	      lj_err_msg(L, LJ_ERR_NOINT);
+      setintV(n, k);
+      return n;
+    }
+  else
+    return NULL;
+}
+
+/* Helper for bitwise instructions. Coercion, metamethod. */
+TValue *lj_meta_bitwise(lua_State *L, TValue *ra, cTValue *rb, cTValue *rc,
+		      BCReg op)
+{
+  MMS mm = bcmode_mm(op);
+  // printf("op:%d\n", op);
+  TValue tempb, tempc;
+  cTValue *b, *c;
+  if ((c = str2int(L, rc, &tempc)) != NULL && 
+      (b = str2int(L, rb, &tempb)) != NULL) {  /* Try coercion first. */
+    setintV(ra, lj_vm_foldbitwise(numV(b), numV(c), (int)mm-MM_band));
+    return NULL;
+  } else {
+    cTValue *mo = lj_meta_lookup(L, rb, mm);
+    if (tvisnil(mo)) {
+      mo = lj_meta_lookup(L, rc, mm);
+      if (tvisnil(mo)) {
+        if (str2num(rb, &tempb) == NULL) rc = rb;
+        lj_err_optype(L, rc, LJ_ERR_OPBIT);
+	      return NULL;  /* unreachable */
       }
     }
     return mmcall(L, lj_cont_ra, mo, rb, rc);

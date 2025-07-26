@@ -9,9 +9,25 @@
 #ifndef _LJ_OBJ_H
 #define _LJ_OBJ_H
 
+#include <math.h>
+#include <stdio.h>
+#include <assert.h>
+
 #include "lua.h"
 #include "lj_def.h"
 #include "lj_arch.h"
+
+#define ljp_assert(cond, ...) \
+    do { \
+        if (!(cond)) { \
+            printf("\n"); \
+            printf("[%s:%s:%d] [%sFATAL%s] ", __FILE__, __FUNCTION__, __LINE__, "\x1b[31m", "\x1b[0m"); \
+            printf(__VA_ARGS__ __VA_OPT__(,) "A fatal error occurred without a message.\n"); \
+            fflush(stdout); \
+            fflush(stderr); \
+            abort(); \
+        } \
+    } while(0)
 
 /* -- Memory references --------------------------------------------------- */
 
@@ -558,7 +574,9 @@ enum {
   /* Only the above (fast) metamethods are negative cached (max. 8). */ \
   _(lt) _(le) _(concat) _(call) \
   /* The following must be in ORDER ARITH. */ \
-  _(add) _(sub) _(mul) _(div) _(mod) _(pow) _(unm) \
+  _(add) _(sub) _(mul) _(div) _(idiv) _(mod) \
+  _(band) _(bor) _(bxor) _(shl) _(shr) _(pow) \
+  _(unm) _(bnot) \
   /* The following are used in the standard libraries. */ \
   _(metatable) _(tostring) MMDEF_FFI(_) MMDEF_PAIRS(_)
 

@@ -9,6 +9,7 @@
 #define lj_parse_c
 #define LUA_CORE
 
+
 #include "lj_obj.h"
 #include "lj_gc.h"
 #include "lj_err.h"
@@ -146,8 +147,11 @@ typedef struct FuncState {
 } FuncState;
 
 /* Binary and unary operators. ORDER OPR */
+// !!! Same order as the `priority` table
 typedef enum BinOpr {
-  OPR_ADD, OPR_SUB, OPR_MUL, OPR_DIV, OPR_MOD, OPR_POW,  /* ORDER ARITH */
+  OPR_ADD, OPR_SUB, OPR_MUL, OPR_DIV, OPR_IDIV, OPR_MOD,  /* ORDER ARITH */
+  OPR_BAND, OPR_BOR, OPR_BXOR, OPR_SHL, OPR_SHR,
+  OPR_POW,
   OPR_CONCAT,
   OPR_NE, OPR_EQ,
   OPR_LT, OPR_GE, OPR_LE, OPR_GT,
@@ -772,13 +776,29 @@ static void bcemit_branch_f(FuncState *fs, ExpDesc *e)
 
 /* -- Bytecode emitter for operators -------------------------------------- */
 
+
+static double __foldarith(double x, double y, int op)
+{
+  // printf("__foldarith  x:%d/0x%x, y:%d/0x%x, op:%d\n", (uint32_t)x, (uint32_t)x, (uint32_t)y, (uint32_t)y, op);
+  switch (op) {
+    case OPR_ADD: return x+y; break;
+    case OPR_SUB: return x-y; break;
+    case OPR_MUL: return x*y; break;
+    case OPR_DIV: return x/y; break;
+    case OPR_IDIV: return lj_vm_floor(x/y); break;
+    case OPR_MOD: return x-(lj_vm_floor(x / y) * y); break;
+    case OPR_POW: return pow(x, y); break;
+    default: ljp_assert(0, "bad op: %d", op); return x;
+  }
+}
+
 /* Try constant-folding of arithmetic operators. */
 static int foldarith(BinOpr opr, ExpDesc *e1, ExpDesc *e2)
 {
   TValue o;
   lua_Number n;
   if (!expr_isnumk_nojump(e1) || !expr_isnumk_nojump(e2)) return 0;
-  n = lj_vm_foldarith(expr_numberV(e1), expr_numberV(e2), (int)opr-OPR_ADD);
+  n = __foldarith(expr_numberV(e1), expr_numberV(e2), (int)opr);
   setnumV(&o, n);
   if (tvisnan(&o) || tvismzero(&o)) return 0;  /* Avoid NaN and -0 as consts. */
   if (LJ_DUALNUM) {
@@ -792,11 +812,64 @@ static int foldarith(BinOpr opr, ExpDesc *e1, ExpDesc *e2)
   return 1;
 }
 
+/* Try constant-folding of bitwise operators. */
+static int foldbitwise(FuncState *fs, BinOpr opr, ExpDesc *e1, ExpDesc *e2)
+{
+  int64_t v1, v2, n;
+  if (expr_hasjump(e1) || expr_hasjump(e2)) return 0;
+#if LJ_HASFFI
+  if (e1->k == VKCDATA) {
+    GCcdata *cd1 = cdataV(&e1->u.nval);
+    if (cd1->ctypeid != CTID_INT64 && cd1->ctypeid != CTID_UINT64)
+      return 0;
+    v1 = *(int64_t *)cdataptr(cd1);
+  } else
+#endif
+  if (expr_isnumk(e1)) {
+    TValue *o1 = expr_numtv(e1);
+    v1 = numV(o1);
+    if ((lua_Number)v1 != numV(o1))
+      lj_err_msg(fs->L, LJ_ERR_NOINT);
+  }
+  else return 0;
+#if LJ_HASFFI
+  if (e2->k == VKCDATA) {
+    GCcdata *cd2 = cdataV(&e2->u.nval);
+    if (cd2->ctypeid != CTID_INT64 && cd2->ctypeid != CTID_UINT64)
+      return 0;
+    v2 = *(int64_t *)cdataptr(cd2);
+  } else
+#endif
+  if (expr_isnumk(e2)) {
+    TValue *o2 = expr_numtv(e2);
+    v2 = numV(o2);
+    if ((lua_Number)v2 != numV(o2))
+      lj_err_msg(fs->L, LJ_ERR_NOINT);
+  }
+  else return 0;
+
+  n = lj_vm_foldbitwise(v1, v2, (int)opr-OPR_BAND);
+#if LJ_HASFFI
+  if (e1->k == VKCDATA) {
+    GCcdata *cd1 = cdataV(&e1->u.nval);
+    *(int64_t *)cdataptr(cd1) = n;
+  } else if (e2->k == VKCDATA) {
+    GCcdata *cd2 = cdataV(&e2->u.nval);
+    *(int64_t *)cdataptr(cd2) = n;
+    memcpy(e1, e2, sizeof(ExpDesc));
+  } else
+#endif
+  setintV(&e1->u.nval, n);
+  return 1;
+}
+
 /* Emit arithmetic operator. */
 static void bcemit_arith(FuncState *fs, BinOpr opr, ExpDesc *e1, ExpDesc *e2)
 {
   BCReg rb, rc, t;
   uint32_t op;
+  if (opr >= OPR_BAND && opr <= OPR_SHR && foldbitwise(fs, opr, e1, e2))
+    return;
   if (foldarith(opr, e1, e2))
     return;
   if (opr == OPR_POW) {
@@ -960,7 +1033,7 @@ static void bcemit_unop(FuncState *fs, BCOp op, ExpDesc *e)
       lj_assertFS(e->k == VNONRELOC, "bad expr type %d", e->k);
     }
   } else {
-    lj_assertFS(op == BC_UNM || op == BC_LEN, "bad unop %d", op);
+    lj_assertFS(op == BC_UNM || op == BC_LEN || op == BC_BNOT, "bad unop %d", op);
     if (op == BC_UNM && !expr_hasjump(e)) {  /* Constant-fold negations. */
 #if LJ_HASFFI
       if (e->k == VKCDATA) {  /* Fold in-place since cdata is not interned. */
@@ -986,6 +1059,26 @@ static void bcemit_unop(FuncState *fs, BCOp op, ExpDesc *e)
 	  o->u64 ^= U64x(80000000,00000000);
 	  return;
 	}
+      }
+    }
+    if (op == BC_BNOT && !expr_hasjump(e)) {  /* Constant-fold. */
+#if LJ_HASFFI
+      if (e->k == VKCDATA) {  /* Fold in-place since cdata is not interned. */
+        GCcdata *cd = cdataV(&e->u.nval);
+        int64_t *p = (int64_t *)cdataptr(cd);
+        if (cd->ctypeid == CTID_INT64 || cd->ctypeid == CTID_UINT64) {
+          *p = ~*p;
+          return;
+        }
+      } else
+#endif
+      if (expr_isnumk(e)) {
+        TValue *o = expr_numtv(e);
+        int32_t k = numV(o);
+        if ((lua_Number)k != numV(o))
+          lj_err_msg(fs->L, LJ_ERR_NOINT);
+        setintV(o, ~k);
+        return;
       }
     }
     expr_toanyreg(fs, e);
@@ -2033,8 +2126,14 @@ static BinOpr token2binop(LexToken tok)
   case '-':	return OPR_SUB;
   case '*':	return OPR_MUL;
   case '/':	return OPR_DIV;
+  case TK_idiv:	return OPR_IDIV;
   case '%':	return OPR_MOD;
   case '^':	return OPR_POW;
+  case '&':	return OPR_BAND;
+  case '|':	return OPR_BOR;
+  case '~':	return OPR_BXOR;
+  case TK_shl:	return OPR_SHL;
+  case TK_shr:	return OPR_SHR;
   case TK_concat: return OPR_CONCAT;
   case TK_ne:	return OPR_NE;
   case TK_eq:	return OPR_EQ;
@@ -2053,14 +2152,17 @@ static const struct {
   uint8_t left;		/* Left priority. */
   uint8_t right;	/* Right priority. */
 } priority[] = {
-  {6,6}, {6,6}, {7,7}, {7,7}, {7,7},	/* ADD SUB MUL DIV MOD */
-  {10,9}, {5,4},			/* POW CONCAT (right associative) */
-  {3,3}, {3,3},				/* EQ NE */
-  {3,3}, {3,3}, {3,3}, {3,3},		/* LT GE GT LE */
-  {2,2}, {1,1}				/* AND OR */
+  {10, 10}, {10, 10},           /* ADD SUB */
+  {11, 11}, {11, 11}, {11, 11}, {11, 11},  /* MUL DIV IDIV MOD */
+  {6, 6}, {4, 4}, {5, 5},       /* BAND BXOR BOR */
+  {7, 7}, {7, 7},               /* SHL SHR */
+  {14, 13}, {9, 8},             /* POW CONCAT (right associative) */
+  {3, 3}, {3, 3},               /* EQ NE */
+  {3, 3}, {3, 3}, {3, 3}, {3, 3}, /* LT GE GT LE */
+  {2, 2}, {1, 1}                /* AND OR */
 };
 
-#define UNARY_PRIORITY		8  /* Priority for unary operators. */
+#define UNARY_PRIORITY  12  /* Priority for unary operators. */
 
 /* Forward declaration. */
 static BinOpr expr_binop(LexState *ls, ExpDesc *v, uint32_t limit);
@@ -2075,6 +2177,8 @@ static void expr_unop(LexState *ls, ExpDesc *v)
     op = BC_UNM;
   } else if (ls->tok == '#') {
     op = BC_LEN;
+  } else if (ls->tok == '~') {
+    op = BC_BNOT;
   } else {
     expr_simple(ls, v);
     return;
