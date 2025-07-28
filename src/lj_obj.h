@@ -575,7 +575,7 @@ enum {
   _(lt) _(le) _(concat) _(call) \
   /* The following must be in ORDER ARITH. */ \
   _(add) _(sub) _(mul) _(div) _(idiv) _(mod) \
-  _(band) _(bor) _(bxor) _(shl) _(shr) _(pow) \
+  _(band) _(bor) _(bxor) _(shl) _(sar) _(pow) \
   _(unm) _(bnot) \
   /* The following are used in the standard libraries. */ \
   _(metatable) _(tostring) MMDEF_FFI(_) MMDEF_PAIRS(_)

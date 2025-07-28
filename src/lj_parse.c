@@ -150,7 +150,7 @@ typedef struct FuncState {
 // !!! Same order as the `priority` table
 typedef enum BinOpr {
   OPR_ADD, OPR_SUB, OPR_MUL, OPR_DIV, OPR_IDIV, OPR_MOD,  /* ORDER ARITH */
-  OPR_BAND, OPR_BOR, OPR_BXOR, OPR_SHL, OPR_SHR,
+  OPR_BAND, OPR_BOR, OPR_BXOR, OPR_SHL, OPR_SAR,
   OPR_POW,
   OPR_CONCAT,
   OPR_NE, OPR_EQ,
@@ -868,7 +868,7 @@ static void bcemit_arith(FuncState *fs, BinOpr opr, ExpDesc *e1, ExpDesc *e2)
 {
   BCReg rb, rc, t;
   uint32_t op;
-  if (opr >= OPR_BAND && opr <= OPR_SHR && foldbitwise(fs, opr, e1, e2))
+  if (opr >= OPR_BAND && opr <= OPR_SAR && foldbitwise(fs, opr, e1, e2))
     return;
   if (foldarith(opr, e1, e2))
     return;
@@ -2133,7 +2133,7 @@ static BinOpr token2binop(LexToken tok)
   case '|':	return OPR_BOR;
   case '~':	return OPR_BXOR;
   case TK_shl:	return OPR_SHL;
-  case TK_shr:	return OPR_SHR;
+  case TK_sar:	return OPR_SAR;
   case TK_concat: return OPR_CONCAT;
   case TK_ne:	return OPR_NE;
   case TK_eq:	return OPR_EQ;
@@ -2155,7 +2155,7 @@ static const struct {
   {10, 10}, {10, 10},           /* ADD SUB */
   {11, 11}, {11, 11}, {11, 11}, {11, 11},  /* MUL DIV IDIV MOD */
   {6, 6}, {4, 4}, {5, 5},       /* BAND BXOR BOR */
-  {7, 7}, {7, 7},               /* SHL SHR */
+  {7, 7}, {7, 7},               /* SHL SAR */
   {14, 13}, {9, 8},             /* POW CONCAT (right associative) */
   {3, 3}, {3, 3},               /* EQ NE */
   {3, 3}, {3, 3}, {3, 3}, {3, 3}, /* LT GE GT LE */
