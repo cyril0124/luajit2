@@ -358,7 +358,7 @@ static LexToken lex_scan(LexState *ls, TValue *tv)
     case '>':
       lex_next(ls);
       if (ls->c == '=') { lex_next(ls); return TK_ge; } else
-      if (ls->c == '>') { lex_next(ls); return TK_shr; } else return '>';
+      if (ls->c == '>') { lex_next(ls); return TK_sar; } else return '>';
     case '/':
       lex_next(ls);
       if (ls->c != '/') return '/'; else { lex_next(ls); return TK_idiv; }

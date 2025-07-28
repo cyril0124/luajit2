@@ -110,7 +110,7 @@
   _(BORVN,	dst,	var,	num,	bor) \
   _(BXORVN,	dst,	var,	num,	bxor) \
   _(SHLVN,	dst,	var,	num,	shl) \
-  _(SHRVN,	dst,	var,	num,	shr) \
+  _(SARVN,	dst,	var,	num,	sar) \
   \
   _(ADDNV,	dst,	var,	num,	add) \
   _(SUBNV,	dst,	var,	num,	sub) \
@@ -122,7 +122,7 @@
   _(BORNV,	dst,	var,	num,	bor) \
   _(BXORNV,	dst,	var,	num,	bxor) \
   _(SHLNV,	dst,	var,	num,	shl) \
-  _(SHRNV,	dst,	var,	num,	shr) \
+  _(SARNV,	dst,	var,	num,	sar) \
   \
   _(ADDVV,	dst,	var,	var,	add) \
   _(SUBVV,	dst,	var,	var,	sub) \
@@ -134,7 +134,7 @@
   _(BORVV,	dst,	var,	var,	bor) \
   _(BXORVV,	dst,	var,	var,	bxor) \
   _(SHLVV,	dst,	var,	var,	shl) \
-  _(SHRVV,	dst,	var,	var,	shr) \
+  _(SARVV,	dst,	var,	var,	sar) \
   \
   _(POW,	dst,	var,	var,	pow) \
   _(CAT,	dst,	rbase,	rbase,	concat) \

@@ -2503,15 +2503,15 @@ void lj_record_ins(jit_State *J)
     }
     break;
 
-  case BC_BANDNV: case BC_BORNV: case BC_BXORNV: case BC_SHLNV: case BC_SHRNV:
+  case BC_BANDNV: case BC_BORNV: case BC_BXORNV: case BC_SHLNV: case BC_SARNV:
     /* Swap rb/rc and rbv/rcv. rav is temp. */
     ix.tab = rc; ix.key = rc = rb; rb = ix.tab;
     copyTV(J->L, rav, rbv);
     copyTV(J->L, rbv, rcv);
     copyTV(J->L, rcv, rav);
     /* fallthrough */
-  case BC_BANDVN: case BC_BORVN: case BC_BXORVN: case BC_SHLVN: case BC_SHRVN:
-  case BC_BANDVV: case BC_BORVV: case BC_BXORVV: case BC_SHLVV: case BC_SHRVV: {
+  case BC_BANDVN: case BC_BORVN: case BC_BXORVN: case BC_SHLVN: case BC_SARVN:
+  case BC_BANDVV: case BC_BORVV: case BC_BXORVV: case BC_SHLVV: case BC_SARVV: {
     MMS mm = bcmode_mm(op);
     if (tref_isnumber_str(rb) && tref_isnumber_str(rc))
       rc = lj_opt_narrow_bitwise(J, rb, rc, rbv, rcv,

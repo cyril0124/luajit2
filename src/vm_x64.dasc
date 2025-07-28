@@ -3578,8 +3578,8 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
   case BC_SHLVN: case BC_SHLNV: case BC_SHLVV:
     |  ins_shift shl
     break;
-  case BC_SHRVN: case BC_SHRNV: case BC_SHRVV:
-    |  ins_shift shr
+  case BC_SARVN: case BC_SARNV: case BC_SARVV:
+    |  ins_shift sar
     break;
 
   /* -- Constant ops ------------------------------------------------------ */

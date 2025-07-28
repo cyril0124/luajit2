@@ -216,7 +216,7 @@ static int carith_int64(lua_State *L, CTState *cts, CDArith *ca, MMS mm)
     case MM_bor: *up = u0 | u1; break;
     case MM_bxor: *up = u0 ^ u1; break;
     case MM_shl: *up = lj_carith_shift64(u0, (int32_t)u1, IR_BSHL-IR_BSHL); break;
-    case MM_shr: *up = lj_carith_shift64(u0, (int32_t)u1, IR_BSHR-IR_BSHL); break;
+    case MM_sar: *up = lj_carith_shift64(u0, (int32_t)u1, IR_BSAR-IR_BSHL); break;
     case MM_bnot: *up = ~u0; break;
     case MM_idiv: *up = u0 / u1; break;
     default:
