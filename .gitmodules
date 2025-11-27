@@ -1,0 +1,3 @@
+[submodule "tests/luajit2-test-suite"]
+	path = tests/luajit2-test-suite
+	url = https://github.com/cyril0124/luajit2-test-suite

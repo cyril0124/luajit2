@@ -9,17 +9,29 @@ set -e  # Exit on error
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Find the LuaJIT binary
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
+# Initialize submodule if needed
+if [ -d "$SCRIPT_DIR/luajit2-test-suite" ]; then
+    if [ ! -f "$SCRIPT_DIR/luajit2-test-suite/run-tests" ]; then
+        echo -e "${BLUE}Initializing luajit2-test-suite submodule...${NC}"
+        cd "$PROJECT_ROOT"
+        git submodule update --init --recursive tests/luajit2-test-suite
+        cd "$SCRIPT_DIR"
+        echo ""
+    fi
+fi
+
 # Check for custom LuaJIT path or use default
 if [ -n "$1" ]; then
     LUAJIT="$1"
 else
-    LUAJIT="$PROJECT_ROOT/src/luajit"
+    LUAJIT="$PROJECT_ROOT/bin/luajit"
 fi
 
 if [ ! -x "$LUAJIT" ]; then
@@ -76,6 +88,31 @@ for test_file in "$SCRIPT_DIR"/test_*.lua; do
         run_test "$test_file"
     fi
 done
+
+# Run luajit2-test-suite if available
+if [ -d "$SCRIPT_DIR/luajit2-test-suite" ] && [ -f "$SCRIPT_DIR/luajit2-test-suite/run-tests" ]; then
+    echo "========================================"
+    echo "Running luajit2-test-suite"
+    echo "========================================"
+    echo ""
+    
+    cd "$SCRIPT_DIR/luajit2-test-suite"
+    if ./run-tests "$PROJECT_ROOT" "$LUAJIT" > /tmp/luajit2_test_suite_$$.txt 2>&1; then
+        echo -e "${GREEN}luajit2-test-suite PASSED${NC}"
+        PASSED=$((PASSED + 1))
+        # Show summary line
+        tail -1 /tmp/luajit2_test_suite_$$.txt
+    else
+        echo -e "${RED}luajit2-test-suite FAILED${NC}"
+        FAILED=$((FAILED + 1))
+        echo "Error output:"
+        tail -20 /tmp/luajit2_test_suite_$$.txt | sed 's/^/  /'
+    fi
+    rm -f /tmp/luajit2_test_suite_$$.txt
+    TOTAL=$((TOTAL + 1))
+    cd "$SCRIPT_DIR"
+    echo ""
+fi
 
 # Print summary
 echo "========================================"

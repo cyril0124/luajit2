@@ -52,6 +52,12 @@ local function test_shr_edge_cases()
     assert((1ULL >> 1ULL) == bit.rshift(1ULL, 1ULL), "ULL >> ULL failed")
     assert((0x40000000 >> 30ULL) == bit.rshift(0x40000000, 30ULL), "number >> ULL failed")
     
+    -- Negative number tests (logical shift = zero-fill)
+    assert((-1 >> 1) == bit.rshift(-1, 1), "-1 >> 1 failed")
+    assert((-8 >> 2) == bit.rshift(-8, 2), "-8 >> 2 failed")
+    assert((-16 >> 2) == bit.rshift(-16, 2), "-16 >> 2 failed")
+    assert((0x80000000 >> 1) == bit.rshift(0x80000000, 1), "0x80000000 >> 1 failed")
+    
     print("Edge case >> tests passed!")
 end
 
