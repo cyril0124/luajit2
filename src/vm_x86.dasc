@@ -4178,7 +4178,7 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
     |  ins_shift shl
     break;
   case BC_SARVN: case BC_SARNV: case BC_SARVV:
-    |  ins_shift sar
+    |  ins_shift shr  // Lua 5.3 >> is logical shift, not arithmetic
     break;
 
   /* -- Constant ops ------------------------------------------------------ */

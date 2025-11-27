@@ -72,14 +72,26 @@ double lj_vm_foldarith(double x, double y, int op)
 
 int64_t lj_vm_foldbitwise(int64_t x, int64_t y, int op)
 {
+  int64_t result;
+  /* Lua 5.3 bitwise operations work on 64-bit integers, but we need to
+     truncate to 32-bit for LuaJIT's number representation */
+  uint32_t x32 = (uint32_t)x;
+  uint32_t y32 = (uint32_t)y;
+  uint32_t result32;
+  
   switch (op) {
-  case IR_BAND - IR_BAND: return x&y; break;
-  case IR_BOR  - IR_BAND: return x|y; break;
-  case IR_BXOR - IR_BAND: return x^y; break;
-  case IR_BSHL - IR_BAND: return x<<y; break;
-  case IR_BSAR - IR_BAND: return x>>y; break;
-  default: return ~x; /* IR_BNOT */
+  case IR_BAND - IR_BAND: result32 = x32 & y32; break;
+  case IR_BOR  - IR_BAND: result32 = x32 | y32; break;
+  case IR_BXOR - IR_BAND: result32 = x32 ^ y32; break;
+  case IR_BSHL - IR_BAND: result32 = x32 << y32; break;
+  case IR_BSHR - IR_BAND: result32 = x32 >> y32; break;  /* Lua 5.3 >> is logical shift */
+  case IR_BSAR - IR_BAND: result32 = (uint32_t)((int32_t)x32 >> y32); break;  /* Arithmetic right shift */
+  default: result32 = ~x32; /* IR_BNOT */
   }
+  
+  /* Convert back to int32_t for proper sign extension if needed */
+  result = (int32_t)result32;
+  return result;
 }
 
 int32_t LJ_FASTCALL lj_vm_idivi(int32_t a, int32_t b)

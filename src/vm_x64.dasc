@@ -3594,32 +3594,30 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
     ||case 0:
     |   checkint RB, ->vmeta_bitwise_vn
     |   cmp dword [KBASE+RC*8+4], LJ_TISNUM; jne ->vmeta_bitwise_vn
-    |   mov RB, [BASE+RB*8]
-    |   mov RA, [KBASE+RC*8]
-    |   intins RB, cl
+    |   mov RBd, dword [BASE+RB*8]
+    |   mov RAd, dword [KBASE+RC*8]
+    |   intins RBd, cl
     ||  break;
     ||case 1:
     |   checkint RB, ->vmeta_bitwise_nv
     |   cmp dword [KBASE+RC*8+4], LJ_TISNUM; jne ->vmeta_bitwise_nv
-    |   mov RC, [KBASE+RC*8]
-    |   mov RA, [BASE+RB*8]
-    |   intins RC, cl
+    |   mov RCd, dword [KBASE+RC*8]
+    |   mov RAd, dword [BASE+RB*8]
+    |   intins RCd, cl
     ||  break;
     ||default:
     |   checkint RB, ->vmeta_bitwise_vv
     |   checkint RC, ->vmeta_bitwise_vv
-    |   mov RB, [BASE+RB*8]
-    |   mov RA, [BASE+RC*8]
-    |   intins RB, cl
+    |   mov RBd, dword [BASE+RB*8]
+    |   mov RAd, dword [BASE+RC*8]
+    |   intins RBd, cl
     ||  break;
     ||}
     |  mov dword [BASE+RA*8+4], LJ_TISNUM
     ||if (vk == 1) {
-    |   setint RC
-    |   mov [BASE+RA*8], RC
+    |   mov dword [BASE+RA*8], RCd
     ||} else {
-    |   setint RB
-    |   mov [BASE+RA*8], RB
+    |   mov dword [BASE+RA*8], RBd
     ||}
     |  ins_next
     |.endmacro
@@ -3629,7 +3627,7 @@ static void build_ins(BuildCtx *ctx, BCOp op, int defop)
     |  ins_shift shl
     break;
   case BC_SARVN: case BC_SARNV: case BC_SARVV:
-    |  ins_shift sar
+    |  ins_shift shr  // Lua 5.3 >> is logical shift, not arithmetic [TEST MARKER 12345]
     break;
 
   /* -- Constant ops ------------------------------------------------------ */

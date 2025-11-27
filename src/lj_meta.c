@@ -256,18 +256,14 @@ static cTValue *str2int(lua_State *L, cTValue *o, TValue *n)
   if (tvisint(o))
     return o;
   else if (tvisnum(o)) {
-    int32_t k = (int32_t)numV(o);
-    if ((lua_Number)k != numV(o))
-      lj_err_msg(L, LJ_ERR_NOINT);
+    int32_t k = lj_num2bit(numV(o));
     setintV(n, k);
     return n;
   } else if (tvisstr(o) && lj_strscan_num(strV(o), n))
     if (tvisint(n))
       return n;
     else {
-      int32_t k = (int32_t)numV(n);
-      if ((lua_Number)k != numV(n))
-	      lj_err_msg(L, LJ_ERR_NOINT);
+      int32_t k = lj_num2bit(numV(n));
       setintV(n, k);
       return n;
     }
@@ -280,12 +276,15 @@ TValue *lj_meta_bitwise(lua_State *L, TValue *ra, cTValue *rb, cTValue *rc,
 		      BCReg op)
 {
   MMS mm = bcmode_mm(op);
-  // printf("op:%d\n", op);
   TValue tempb, tempc;
   cTValue *b, *c;
   if ((c = str2int(L, rc, &tempc)) != NULL && 
       (b = str2int(L, rb, &tempb)) != NULL) {  /* Try coercion first. */
-    setintV(ra, lj_vm_foldbitwise(numV(b), numV(c), (int)mm-MM_band));
+    /* Convert doubles to int64_t for bitwise operations */
+    int64_t ib = (int64_t)lj_num2bit(numV(b));
+    int64_t ic = (int64_t)lj_num2bit(numV(c));
+    int64_t result = lj_vm_foldbitwise(ib, ic, (int)mm-MM_band);
+    setintV(ra, result);
     return NULL;
   } else {
     cTValue *mo = lj_meta_lookup(L, rb, mm);
