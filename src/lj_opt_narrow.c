@@ -577,7 +577,8 @@ TRef lj_opt_narrow_unm(jit_State *J, TRef rc, TValue *vc)
 TRef lj_opt_narrow_bnot(jit_State *J, TRef rc, TValue *vc)
 {
   rc = conv_str_tonum(J, rc, vc);
-  return emitir(IRTN(IR_BNOT), rc, 0);
+  rc = lj_opt_narrow_tobit(J, rc);
+  return emitir(IRTI(IR_BNOT), rc, 0);
 }
 
 /* Narrowing of idiv operator. */

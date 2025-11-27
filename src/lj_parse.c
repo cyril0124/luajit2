@@ -2148,7 +2148,7 @@ static const struct {
 } priority[] = {
   {10, 10}, {10, 10},           /* ADD SUB */
   {11, 11}, {11, 11}, {11, 11}, {11, 11},  /* MUL DIV IDIV MOD */
-  {6, 6}, {4, 4}, {5, 5},       /* BAND BXOR BOR */
+  {6, 6}, {5, 5}, {4, 4},       /* BAND BXOR BOR */
   {7, 7}, {7, 7},               /* SHL SAR */
   {14, 13}, {9, 8},             /* POW CONCAT (right associative) */
   {3, 3}, {3, 3},               /* EQ NE */
